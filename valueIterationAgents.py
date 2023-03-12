@@ -62,7 +62,22 @@ class ValueIterationAgent(ValueEstimationAgent):
     def runValueIteration(self):
         # Write value iteration code here
         "*** YOUR CODE HERE ***"
-
+        k = 0
+        while k < self.iterations:
+            newValues = self.values.copy()
+            for state in self.mdp.getStates():
+                #update value of each state
+                if not self.mdp.isTerminal(state):
+                    possibleActions = self.mdp.getPossibleActions(state)
+                    maxExpectimaxValue = self.computeQValueFromValues(state, possibleActions[0])
+                    for action in possibleActions:
+                        expectimaxValue = self.computeQValueFromValues(state, action)
+                        if expectimaxValue > maxExpectimaxValue:
+                            maxExpectimaxValue = expectimaxValue
+                    newValues[state] = maxExpectimaxValue
+                    
+            self.values.update(newValues)
+            k += 1
 
     def getValue(self, state):
         """
@@ -77,7 +92,14 @@ class ValueIterationAgent(ValueEstimationAgent):
           value function stored in self.values.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        sum = 0
+        for transitionState in self.mdp.getTransitionStatesAndProbs(state, action):
+            newState = transitionState[0]
+            probability = transitionState[1]
+            reward = self.mdp.getReward(state, action, newState)
+            val = probability * (reward + (self.discount * self.values[newState]))
+            sum += probability * (reward + (self.discount * self.values[newState]))
+        return sum
 
     def computeActionFromValues(self, state):
         """
@@ -89,7 +111,17 @@ class ValueIterationAgent(ValueEstimationAgent):
           terminal state, you should return None.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        if self.mdp.isTerminal(state):
+            return
+        possibleActions = self.mdp.getPossibleActions(state)
+        actionTaken = possibleActions[0]
+        maxExpectimaxValue = self.computeQValueFromValues(state, possibleActions[0])
+        for action in possibleActions:
+            expectimaxValue = self.computeQValueFromValues(state, action)
+            if expectimaxValue > maxExpectimaxValue:
+                maxExpectimaxValue = expectimaxValue
+                actionTaken = action
+        return actionTaken
 
     def getPolicy(self, state):
         return self.computeActionFromValues(state)
