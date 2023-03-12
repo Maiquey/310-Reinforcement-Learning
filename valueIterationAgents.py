@@ -159,11 +159,6 @@ class AsynchronousValueIterationAgent(ValueIterationAgent):
               mdp.isTerminal(state)
         """
         ValueIterationAgent.__init__(self, mdp, discount, iterations)
-        self.mdp = mdp
-        self.discount = discount
-        self.iterations = iterations
-        self.values = util.Counter() # A Counter is a dict with default 0
-        self.runValueIteration()
 
     def runValueIteration(self):
         "*** YOUR CODE HERE ***"
@@ -203,4 +198,60 @@ class PrioritizedSweepingValueIterationAgent(AsynchronousValueIterationAgent):
 
     def runValueIteration(self):
         "*** YOUR CODE HERE ***"
+        predecessors = {}
+        #initialize sets
+        for state in self.mdp.getStates():
+            predecessors[state] = set()
+        #compute predecessors
+        for state in self.mdp.getStates():
+            for action in self.mdp.getPossibleActions(state):
+                for transitionState in self.mdp.getTransitionStatesAndProbs(state, action):
+                    newState = transitionState[0]
+                    probability = transitionState[1]
+                    if probability > 0:
+                        predecessors[newState].update({state})
+        #initialize empty priority queue
+        pQueue = util.PriorityQueue()
+        for state in self.mdp.getStates():
+            if not self.mdp.isTerminal(state):
+                currentVal = self.values[state]
+
+                #Should probably change this maxQValue block into a seperate function but I don't really care
+                possibleActions = self.mdp.getPossibleActions(state)
+                maxExpectimaxValue = self.computeQValueFromValues(state, possibleActions[0])
+                for action in possibleActions:
+                    expectimaxValue = self.computeQValueFromValues(state, action)
+                    if expectimaxValue > maxExpectimaxValue:
+                        maxExpectimaxValue = expectimaxValue
+
+                diff = abs(currentVal - maxExpectimaxValue)
+
+                pQueue.push(state, (0 - diff))
+        k = 0
+        while k < self.iterations:
+            if pQueue.isEmpty():
+                return
+            poppedState = pQueue.pop()
+            if not self.mdp.isTerminal(poppedState):
+                #update state value
+                possibleActions = self.mdp.getPossibleActions(poppedState)
+                maxExpectimaxValue = self.computeQValueFromValues(poppedState, possibleActions[0])
+                for action in possibleActions:
+                    expectimaxValue = self.computeQValueFromValues(poppedState, action)
+                    if expectimaxValue > maxExpectimaxValue:
+                        maxExpectimaxValue = expectimaxValue
+                self.values[poppedState] = maxExpectimaxValue
+            for p in predecessors[poppedState]:
+                possibleActions = self.mdp.getPossibleActions(p)
+                maxExpectimaxValue = self.computeQValueFromValues(p, possibleActions[0])
+                for action in possibleActions:
+                    expectimaxValue = self.computeQValueFromValues(p, action)
+                    if expectimaxValue > maxExpectimaxValue:
+                        maxExpectimaxValue = expectimaxValue
+                diff = abs(self.values[p] - maxExpectimaxValue)
+                if diff > self.theta:
+                    pQueue.update(p, (0 - diff))
+            k += 1
+
+
 
