@@ -297,6 +297,10 @@ def getBridgeGrid():
             [ '#',-100, -100, -100, -100, -100, '#']]
     return Gridworld(grid)
 
+def getTestGrid():
+    grid = [[ 10, 'S', -10]]
+    return Gridworld(grid)
+
 def getBookGrid():
     grid = [[' ',' ',' ',+1],
             [' ','#',' ',-1],
